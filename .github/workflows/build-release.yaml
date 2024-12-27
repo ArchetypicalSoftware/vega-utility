@@ -27,7 +27,7 @@ jobs:
 
     - name: Run PowerShell script to get versions
       run: |
-        $versions = & ./get-versions.ps1
+        $versions = & ./.github/workflows/get-versions.ps1
         $versions | ForEach-Object {
           docker build --build-arg K8SVersion=$_ -t archetypicalsoftware/vega-utility:$_ .
           docker push archetypicalsoftware/vega-utility:$_
