@@ -28,8 +28,16 @@ jobs:
     - name: Run PowerShell script to get versions
       run: |
         $versions = & ./.github/workflows/get-versions.ps1
+        if ($versions.Count -eq 0) {
+          Write-Host "No versions found. Skipping Docker build and push."
+          exit 0
+        }
+        Write-Host "Versions found: $($versions -join ', ')"
         $versions | ForEach-Object {
           docker build --build-arg K8SVersion=$_ -t archetypicalsoftware/vega-utility:$_ .
           docker push archetypicalsoftware/vega-utility:$_
         }
+        Write-Host "Tagging and pushing latest version"
+        docker tag archetypicalsoftware/vega-utility:$($versions[0]) archetypicalsoftware/vega-utility:latest
+        docker push archetypicalsoftware/vega-utility:latest
       shell: pwsh
