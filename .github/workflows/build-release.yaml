@@ -28,7 +28,7 @@ jobs:
 
     - name: Run PowerShell script to get versions
       run: |
-        $versions = & ./.github/workflows/get-versions.ps1
+        $versions = @( & ./.github/workflows/get-versions.ps1 )
         if ($versions.Count -eq 0) {
           Write-Host "No versions found. Skipping Docker build and push."
           exit 0
