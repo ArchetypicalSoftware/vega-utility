@@ -114,10 +114,30 @@ jobs:
             pwsh ./tests/test-tools.ps1
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Security scan candidate image before publishing "latest"
+  # ─────────────────────────────────────────────────────────────────────────────
+  security-scan:
+    needs: [get-versions, test]
+    runs-on: ubuntu-latest
+    permissions: {}
+
+    steps:
+      - name: Scan latest candidate image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: archetypicalsoftware/vega-utility:v${{ needs.get-versions.outputs.latest }}
+          format: table
+          # Only flag vulnerabilities that have a known fix available
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Point the "latest" tag at the newest Kubernetes version
   # ─────────────────────────────────────────────────────────────────────────────
   tag-latest:
-    needs: [get-versions, test]
+    needs: [get-versions, security-scan]
     runs-on: ubuntu-latest
     permissions: {}
 
@@ -134,29 +154,10 @@ jobs:
             archetypicalsoftware/vega-utility:v${{ needs.get-versions.outputs.latest }}
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Security scan – fail on CRITICAL vulnerabilities that have an available fix.
-  # Rebuilding monthly ensures base-image OS patches are always applied, so any
-  # CRITICAL finding here indicates a package that still needs attention.
+  # Keep README tracked-version table in sync with built matrix
   # ─────────────────────────────────────────────────────────────────────────────
-  security-scan:
-    needs: [get-versions, tag-latest]
-    runs-on: ubuntu-latest
-    permissions: {}
-
-    steps:
-      - name: Scan latest image with Trivy
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: archetypicalsoftware/vega-utility:latest
-          format: table
-          # Only flag vulnerabilities that have a known fix available
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL,HIGH
-          exit-code: '1'
-
   update-readme:
-    needs: [get-versions, security-scan]
+    needs: [get-versions, tag-latest]
     if: github.ref == 'refs/heads/main' && !(github.event_name == 'push' && github.actor == 'github-actions[bot]')
     runs-on: ubuntu-latest
     permissions:

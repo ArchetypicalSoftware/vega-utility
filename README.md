@@ -42,7 +42,7 @@ The Vega Utility is a Docker base image that provides essential Kubernetes tools
 - **Binary release**: Helm is installed from the official `get.helm.sh` CDN and verified against its published sha256 checksum.
 - **Non-root user**: The container runs as a non-privileged `utility` user (uid 1000).
 - **Monthly rebuilds**: Images are rebuilt on the 1st of every month so that OS-level security patches from the base image are always applied.
-- **Trivy scanning**: After each build the published `latest` image is scanned with [Trivy](https://github.com/aquasecurity/trivy). The workflow fails if any **CRITICAL** vulnerability with a known fix is found.
+- **Trivy scanning**: After each build the newest versioned image is scanned with [Trivy](https://github.com/aquasecurity/trivy) before `latest` is updated. The workflow fails if any **CRITICAL** or **HIGH** vulnerability with a known fix is found.
 - **Minimal footprint**: Only `curl` and `ca-certificates` are added as apt dependencies; no unnecessary packages are installed.
 
 ## Intended Use Cases
