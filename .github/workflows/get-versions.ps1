@@ -8,6 +8,7 @@
     Attempts to return $TrackMinorVersions versions; throws if it cannot resolve the full set.
     Returning all tracked versions ensures the monthly workflow rebuilds every image and
     picks up base-image security patches.
+#>
 
 param(
     [int]$TrackMinorVersions = 5,
