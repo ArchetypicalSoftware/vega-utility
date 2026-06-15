@@ -30,9 +30,10 @@ jobs:
         id: versions
         shell: pwsh
         run: |
-          $versions = @( & ./.github/workflows/get-versions.ps1 )
-          if ($versions.Count -eq 0) {
-            Write-Error "get-versions.ps1 returned no versions."
+          $trackedMinorVersions = 5
+          $versions = @( & ./.github/workflows/get-versions.ps1 -TrackMinorVersions $trackedMinorVersions )
+          if ($versions.Count -ne $trackedMinorVersions) {
+            Write-Error "get-versions.ps1 returned $($versions.Count) version(s); expected $trackedMinorVersions."
             exit 1
           }
           Write-Host "Versions to build: $($versions -join ', ')"
@@ -149,4 +150,3 @@ jobs:
           vuln-type: os,library
           severity: CRITICAL,HIGH
           exit-code: '1'
-

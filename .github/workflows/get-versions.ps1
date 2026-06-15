@@ -10,7 +10,8 @@
     picks up base-image security patches.
 
 param(
-    [int]$TrackMinorVersions = 5
+    [int]$TrackMinorVersions = 5,
+    [int]$RetryCount = 3
 )
 
 $ErrorActionPreference = 'Stop'
@@ -24,16 +25,29 @@ $versions = [System.Collections.Generic.List[string]]::new()
 
 for ($minor = $latest.Minor; $minor -gt ($latest.Minor - $TrackMinorVersions); $minor--) {
     $url = "$releaseBase/stable-$($latest.Major).$minor.txt"
-    try {
-        $patch = (Invoke-RestMethod -Uri $url).Trim().TrimStart('v')
-        # Validate it parses as a real version before adding
-        $null = [System.Version]::Parse($patch)
-        $versions.Add($patch)
+    $resolved = $false
+
+    for ($attempt = 1; $attempt -le $RetryCount -and -not $resolved; $attempt++) {
+        try {
+            $patch = (Invoke-RestMethod -Uri $url).Trim().TrimStart('v')
+            # Validate it parses as a real version before adding
+            $null = [System.Version]::Parse($patch)
+            $versions.Add($patch)
+            $resolved = $true
+        }
+        catch {
+            if ($attempt -eq $RetryCount) {
+                throw "Could not retrieve stable version for $($latest.Major).$minor after ${RetryCount} attempt(s): $_"
+            }
+
+            Write-Warning "Could not retrieve stable version for $($latest.Major).$minor on attempt $attempt of ${RetryCount}: $_"
+            Start-Sleep -Seconds $attempt
+        }
     }
-    catch {
-        # This minor version is not yet available or no longer published; skip it
-        Write-Warning "Could not retrieve stable version for $($latest.Major).$minor : $_"
-    }
+}
+
+if ($versions.Count -ne $TrackMinorVersions) {
+    throw "Expected $TrackMinorVersions Kubernetes version(s), but resolved $($versions.Count)."
 }
 
 Write-Output ($versions.ToArray())
