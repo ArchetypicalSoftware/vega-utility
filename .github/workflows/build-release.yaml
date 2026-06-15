@@ -82,6 +82,14 @@ jobs:
           cache-from: type=registry,ref=archetypicalsoftware/vega-utility:v${{ matrix.version }}
           cache-to:   type=inline
 
+      - name: Tag minor alias (e.g. v1.32)
+        shell: bash
+        run: |
+          version='${{ matrix.version }}'
+          minor="${version%.*}"
+          docker buildx imagetools create \
+            -t archetypicalsoftware/vega-utility:v${minor} \
+            archetypicalsoftware/vega-utility:v${version}
   # ─────────────────────────────────────────────────────────────────────────────
   # Run the in-container test suite against the latest built version
   # ─────────────────────────────────────────────────────────────────────────────

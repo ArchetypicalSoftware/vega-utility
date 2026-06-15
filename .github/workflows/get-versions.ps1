@@ -5,9 +5,9 @@
 
 .OUTPUTS
     Array of version strings ordered newest-first, e.g. @("1.32.5","1.31.7","1.30.12",...)
-    Always returns all tracked versions so the monthly workflow rebuilds every image
-    and picks up base-image security patches.
-#>
+    Attempts to return $TrackMinorVersions versions; throws if it cannot resolve the full set.
+    Returning all tracked versions ensures the monthly workflow rebuilds every image and
+    picks up base-image security patches.
 
 param(
     [int]$TrackMinorVersions = 5

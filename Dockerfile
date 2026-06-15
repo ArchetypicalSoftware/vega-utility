@@ -9,7 +9,7 @@ LABEL org.opencontainers.image.title="Vega Utility" \
       org.opencontainers.image.source="https://github.com/ArchetypicalSoftware/vega-utility"
 
 # TARGETARCH is set automatically by Docker BuildKit (amd64 or arm64)
-ARG TARGETARCH
+ARG TARGETARCH=amd64
 ARG K8S_VERSION=1.32.0
 
 # Install minimal dependencies and Helm via the official GPG-signed apt repository

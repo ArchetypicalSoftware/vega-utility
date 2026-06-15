@@ -6,7 +6,7 @@
     Exit code 0 = all tests passed; 1 = one or more tests failed.
 #>
 
-$ErrorActionPreference = 'Continue'
+$ErrorActionPreference = 'Stop'
 $failures = [System.Collections.Generic.List[string]]::new()
 
 function Invoke-Test {
