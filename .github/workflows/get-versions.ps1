@@ -1,28 +1,39 @@
-$apiUrl = "https://cdn.dl.k8s.io/" 
-$response = [xml]$(Invoke-RestMethod -Uri $apiUrl)
+<#
+.SYNOPSIS
+    Returns the latest stable kubectl patch version for each of the N most recent
+    Kubernetes minor releases (without the leading "v").
 
-$paths = $response.ListBucketResult.Contents | Where-Object {$_.Key -match 'release/stable'} | Select-Object -Property Key
-$versions = New-Object System.Collections.ArrayList
-foreach ($p in $paths){ 
-    $test = Invoke-RestMethod -Uri $($apiUrl+$p.Key); 
-    $null = $versions.Add([System.Version]::Parse($test.Trim().Replace("v",""))) 
-}
+.OUTPUTS
+    Array of version strings ordered newest-first, e.g. @("1.32.5","1.31.7","1.30.12",...)
+    Always returns all tracked versions so the monthly workflow rebuilds every image
+    and picks up base-image security patches.
+#>
 
-$candidates = $versions | Select-Object -Unique | Sort-Object -Descending | Select-Object -First 5 | ForEach-Object { 
-    $majorMinor = $_.Major.ToString() + "." + $_.Minor.ToString()
-    "v" + $majorMinor + ".0"
-}
+param(
+    [int]$TrackMinorVersions = 5
+)
 
+$ErrorActionPreference = 'Stop'
+$releaseBase = 'https://dl.k8s.io/release'
 
+# Get the current latest stable version to determine which minor series are active
+$latestStable = (Invoke-RestMethod -Uri "$releaseBase/stable.txt").Trim().TrimStart('v')
+$latest = [System.Version]::Parse($latestStable)
 
-$missingImages = @()
-foreach ($candidate in $candidates) {
-    $imageName = "archetypicalsoftware/vega-utility:$candidate"
-    docker pull $imageName *>$null
-    $result = docker images -q $imageName
-    if (-not $result) {
-        $missingImages += $candidate
+$versions = [System.Collections.Generic.List[string]]::new()
+
+for ($minor = $latest.Minor; $minor -gt ($latest.Minor - $TrackMinorVersions); $minor--) {
+    $url = "$releaseBase/stable-$($latest.Major).$minor.txt"
+    try {
+        $patch = (Invoke-RestMethod -Uri $url).Trim().TrimStart('v')
+        # Validate it parses as a real version before adding
+        $null = [System.Version]::Parse($patch)
+        $versions.Add($patch)
+    }
+    catch {
+        # This minor version is not yet available or no longer published; skip it
+        Write-Warning "Could not retrieve stable version for $($latest.Major).$minor : $_"
     }
 }
 
-Write-Output $missingImages
+Write-Output ($versions.ToArray())

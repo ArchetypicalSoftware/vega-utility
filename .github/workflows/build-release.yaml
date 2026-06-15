@@ -1,44 +1,136 @@
 name: Monthly Docker Build
+
 concurrency:
   group: build-release
   cancel-in-progress: true
+
 on:
   schedule:
-    - cron: '0 0 1 * *' # Runs at midnight on the first day of every month
+    - cron: '0 0 1 * *'  # 1st of every month at midnight UTC
   push:
     branches:
       - main
-  workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:
+
 jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Determine which Kubernetes versions to build
+  # ─────────────────────────────────────────────────────────────────────────────
+  get-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.versions.outputs.matrix }}
+      latest:  ${{ steps.versions.outputs.latest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve Kubernetes versions
+        id: versions
+        shell: pwsh
+        run: |
+          $versions = @( & ./.github/workflows/get-versions.ps1 )
+          if ($versions.Count -eq 0) {
+            Write-Error "get-versions.ps1 returned no versions."
+            exit 1
+          }
+          Write-Host "Versions to build: $($versions -join ', ')"
+          # Emit a JSON array for use as a matrix and the latest (first) version
+          echo "matrix=$($versions | ConvertTo-Json -Compress)" >> $env:GITHUB_OUTPUT
+          echo "latest=$($versions[0])"                         >> $env:GITHUB_OUTPUT
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Build and push a multi-arch image for each Kubernetes version
+  # ─────────────────────────────────────────────────────────────────────────────
   build-and-push:
+    needs: get-versions
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.get-versions.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Enable ARM64 emulation on the amd64 runner
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          # Use a Docker Hub access token (not your account password) stored as
+          # the DOCKERHUB_PASSWORD secret for least-privilege access.
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push linux/amd64 + linux/arm64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            K8S_VERSION=${{ matrix.version }}
+          tags: |
+            archetypicalsoftware/vega-utility:v${{ matrix.version }}
+          # Cache layers from the registry to speed up monthly rebuilds
+          cache-from: type=registry,ref=archetypicalsoftware/vega-utility:v${{ matrix.version }}
+          cache-to:   type=inline
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Run the in-container test suite against the latest built version
+  # ─────────────────────────────────────────────────────────────────────────────
+  test:
+    needs: [get-versions, build-and-push]
+    runs-on: ubuntu-latest
+    container:
+      image: archetypicalsoftware/vega-utility:v${{ needs.get-versions.outputs.latest }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tool tests
+        shell: pwsh
+        run: pwsh ./tests/test-tools.ps1
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Point the "latest" tag at the newest Kubernetes version
+  # ─────────────────────────────────────────────────────────────────────────────
+  tag-latest:
+    needs: [get-versions, test]
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      - name: Update latest tag
+        run: |
+          docker buildx imagetools create \
+            -t archetypicalsoftware/vega-utility:latest \
+            archetypicalsoftware/vega-utility:v${{ needs.get-versions.outputs.latest }}
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Security scan – fail on CRITICAL vulnerabilities that have an available fix.
+  # Rebuilding monthly ensures base-image OS patches are always applied, so any
+  # CRITICAL finding here indicates a package that still needs attention.
+  # ─────────────────────────────────────────────────────────────────────────────
+  security-scan:
+    needs: [get-versions, tag-latest]
+    runs-on: ubuntu-latest
 
-    - name: Run PowerShell script to get versions
-      run: |
-        $versions = @( & ./.github/workflows/get-versions.ps1 )
-        if ($versions.Count -eq 0) {
-          Write-Host "No versions found. Skipping Docker build and push."
-          exit 0
-        }
-        Write-Host "Versions found: $($versions -join ', ')"
-        $versions | ForEach-Object {
-          docker build --build-arg K8SVersion=$_ -t archetypicalsoftware/vega-utility:$_ .
-          docker push archetypicalsoftware/vega-utility:$_
-        }
-        Write-Host "Tagging and pushing latest version"
-        docker tag archetypicalsoftware/vega-utility:$($versions[0]) archetypicalsoftware/vega-utility:latest
-        docker push archetypicalsoftware/vega-utility:latest
-      shell: pwsh
+    steps:
+      - name: Scan latest image with Trivy
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: archetypicalsoftware/vega-utility:latest
+          format: table
+          # Only flag vulnerabilities that have a known fix available
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+
