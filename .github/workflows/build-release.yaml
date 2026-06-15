@@ -101,15 +101,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    container:
-      image: archetypicalsoftware/vega-utility:v${{ needs.get-versions.outputs.latest }}
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Run tool tests
-        shell: pwsh
-        run: pwsh ./tests/test-tools.ps1
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace:ro" \
+            -w /workspace \
+            archetypicalsoftware/vega-utility:v${{ needs.get-versions.outputs.latest }} \
+            pwsh ./tests/test-tools.ps1
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Point the "latest" tag at the newest Kubernetes version
