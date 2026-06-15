@@ -6,13 +6,17 @@
 
 ## Supported Kubernetes Versions
 
-The five most recent Kubernetes minor releases are tracked and rebuilt automatically every month. Each tag is updated with the latest stable patch for that minor version (e.g. `v1.32` always points to the latest `1.32.x` release).
+The five most recent Kubernetes minor releases are tracked and rebuilt automatically every month. Each minor tag (for example `v1.36`) is updated to the latest stable patch for that series, and the table below is kept in sync by the release workflow.
 
-[![k8s v1.32](https://img.shields.io/badge/k8s-v1.32-blue?logo=kubernetes)](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags)
-[![k8s v1.31](https://img.shields.io/badge/k8s-v1.31-blue?logo=kubernetes)](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags)
-[![k8s v1.30](https://img.shields.io/badge/k8s-v1.30-blue?logo=kubernetes)](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags)
-[![k8s v1.29](https://img.shields.io/badge/k8s-v1.29-blue?logo=kubernetes)](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags)
-[![k8s v1.28](https://img.shields.io/badge/k8s-v1.28-blue?logo=kubernetes)](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags)
+<!-- BEGIN_SUPPORTED_K8S_VERSIONS -->
+| Minor tag | Current patch | Docker Hub |
+| --- | --- | --- |
+| `v1.36` | `v1.36.2` | [v1.36](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.36) · [v1.36.2](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.36.2) |
+| `v1.35` | `v1.35.6` | [v1.35](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.35) · [v1.35.6](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.35.6) |
+| `v1.34` | `v1.34.9` | [v1.34](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.34) · [v1.34.9](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.34.9) |
+| `v1.33` | `v1.33.13` | [v1.33](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.33) · [v1.33.13](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.33.13) |
+| `v1.32` | `v1.32.13` | [v1.32](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.32) · [v1.32.13](https://hub.docker.com/r/archetypicalsoftware/vega-utility/tags?name=v1.32.13) |
+<!-- END_SUPPORTED_K8S_VERSIONS -->
 
 ## Supported Platforms
 

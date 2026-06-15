@@ -10,6 +10,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - README.md
   workflow_dispatch:
 
 jobs:
@@ -150,3 +152,32 @@ jobs:
           vuln-type: os,library
           severity: CRITICAL,HIGH
           exit-code: '1'
+
+  update-readme:
+    needs: [get-versions, security-scan]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update README tracked versions
+        shell: pwsh
+        run: |
+          $versions = @('${{ needs.get-versions.outputs.matrix }}' | ConvertFrom-Json)
+          & ./.github/workflows/update-readme.ps1 -ReadmePath ./README.md -Versions $versions
+
+      - name: Commit README version updates
+        shell: bash
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "README is already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "docs: update tracked Kubernetes versions"
+          git push
