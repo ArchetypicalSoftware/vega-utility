@@ -155,7 +155,7 @@ jobs:
 
   update-readme:
     needs: [get-versions, security-scan]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && !(github.event_name == 'push' && github.actor == 'github-actions[bot]')
     runs-on: ubuntu-latest
     permissions:
       contents: write
