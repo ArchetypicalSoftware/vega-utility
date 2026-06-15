@@ -11,7 +11,7 @@ FAIL=0
 
 run_test() {
     local name="$1"; shift
-    printf "  Testing %-40s " "$name ..."
+    printf "  Testing %-40s " "$name"
     if docker run --rm "$IMAGE" sh -c "$*" >/dev/null 2>&1; then
         echo "PASS"
         PASS=$((PASS + 1))

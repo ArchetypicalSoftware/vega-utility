@@ -18,6 +18,8 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   get-versions:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.versions.outputs.matrix }}
       latest:  ${{ steps.versions.outputs.latest }}
@@ -44,6 +46,8 @@ jobs:
   build-and-push:
     needs: get-versions
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -84,6 +88,8 @@ jobs:
   test:
     needs: [get-versions, build-and-push]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     container:
       image: archetypicalsoftware/vega-utility:v${{ needs.get-versions.outputs.latest }}
 
@@ -100,6 +106,7 @@ jobs:
   tag-latest:
     needs: [get-versions, test]
     runs-on: ubuntu-latest
+    permissions: {}
 
     steps:
       - uses: docker/login-action@v3
@@ -121,6 +128,7 @@ jobs:
   security-scan:
     needs: [get-versions, tag-latest]
     runs-on: ubuntu-latest
+    permissions: {}
 
     steps:
       - name: Scan latest image with Trivy
