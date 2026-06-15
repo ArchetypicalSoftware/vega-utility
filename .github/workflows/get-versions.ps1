@@ -8,6 +8,12 @@
     Attempts to return $TrackMinorVersions versions; throws if it cannot resolve the full set.
     Returning all tracked versions ensures the monthly workflow rebuilds every image and
     picks up base-image security patches.
+
+.PARAMETER TrackMinorVersions
+    Number of Kubernetes minor release tracks that must be resolved.
+
+.PARAMETER RetryCount
+    Number of retry attempts for each minor release lookup before failing the workflow.
 #>
 
 param(
