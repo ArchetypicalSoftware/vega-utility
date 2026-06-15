@@ -33,17 +33,17 @@ The Vega Utility is a Docker base image that provides essential Kubernetes tools
 
 - **PowerShell Core** (`pwsh`): Cross-platform PowerShell environment for scripting and automation
 - **kubectl**: Official Kubernetes command-line tool – installed at the latest stable patch for each tracked minor version, with sha256 checksum verification
-- **Helm**: Kubernetes package manager – installed from the official Helm GPG-signed apt repository
+- **Helm**: Kubernetes package manager – installed from the official binary release with sha256 checksum verification
 - **curl**: HTTP client for API interactions and downloads
 
 ## Security
 
-- **Checksum verification**: `kubectl` is verified against its published sha256 before installation.
-- **Signed package repository**: Helm is installed from the official Helm apt repository, verified with GPG.
+- **Checksum verification**: Both `kubectl` and `helm` are verified against their published sha256 checksums before installation.
+- **Binary release**: Helm is installed from the official `get.helm.sh` CDN and verified against its published sha256 checksum.
 - **Non-root user**: The container runs as a non-privileged `utility` user (uid 1000).
 - **Monthly rebuilds**: Images are rebuilt on the 1st of every month so that OS-level security patches from the base image are always applied.
 - **Trivy scanning**: After each build the published `latest` image is scanned with [Trivy](https://github.com/aquasecurity/trivy). The workflow fails if any **CRITICAL** vulnerability with a known fix is found.
-- **Minimal footprint**: Only `curl`, `ca-certificates`, `gnupg`, `apt-transport-https`, and Helm are added; no unnecessary packages are installed.
+- **Minimal footprint**: Only `curl` and `ca-certificates` are added as apt dependencies; no unnecessary packages are installed.
 
 ## Intended Use Cases
 

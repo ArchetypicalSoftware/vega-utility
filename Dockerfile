@@ -11,23 +11,26 @@ LABEL org.opencontainers.image.title="Vega Utility" \
 # TARGETARCH is set automatically by Docker BuildKit (amd64 or arm64)
 ARG TARGETARCH=amd64
 ARG K8S_VERSION=1.32.0
+ARG HELM_VERSION=3.17.3
 
-# Install minimal dependencies and Helm via the official GPG-signed apt repository
+# Install minimal dependencies
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         curl \
-        ca-certificates \
-        gnupg \
-        apt-transport-https; \
-    curl -fsSL https://baltocdn.com/helm/signing.asc \
-        | gpg --dearmor -o /usr/share/keyrings/helm.gpg; \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] \
-https://baltocdn.com/helm/stable/debian/ all main" \
-        > /etc/apt/sources.list.d/helm-stable-debian.list; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends helm; \
+        ca-certificates; \
     rm -rf /var/lib/apt/lists/*
+
+# Install Helm from official binary release with sha256 checksum verification
+RUN set -eux; \
+    curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${TARGETARCH}.tar.gz" \
+        -o /tmp/helm.tar.gz; \
+    curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${TARGETARCH}.tar.gz.sha256sum" \
+        -o /tmp/helm.sha256; \
+    echo "$(awk '{print $1}' /tmp/helm.sha256)  /tmp/helm.tar.gz" | sha256sum --check; \
+    tar -xzf /tmp/helm.tar.gz -C /tmp; \
+    install -o root -g root -m 0755 /tmp/linux-${TARGETARCH}/helm /usr/local/bin/helm; \
+    rm -rf /tmp/helm.tar.gz /tmp/helm.sha256 /tmp/linux-${TARGETARCH}
 
 # Install kubectl with sha256 checksum verification
 RUN set -eux; \
