@@ -11,11 +11,12 @@ LABEL org.opencontainers.image.title="Vega Utility" \
 # TARGETARCH is set automatically by Docker BuildKit (amd64 or arm64)
 ARG TARGETARCH=amd64
 ARG K8S_VERSION=1.32.0
-ARG HELM_VERSION=3.17.3
+ARG HELM_VERSION=3.21.1
 
 # Install minimal dependencies
 RUN set -eux; \
     apt-get update; \
+    apt-get upgrade -y; \
     apt-get install -y --no-install-recommends \
         curl \
         ca-certificates; \
@@ -49,4 +50,3 @@ USER utility
 WORKDIR /home/utility
 
 CMD ["pwsh"]
-
