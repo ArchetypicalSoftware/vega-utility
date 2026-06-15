@@ -48,7 +48,7 @@ for ($minor = $latest.Minor; $minor -gt ($latest.Minor - $TrackMinorVersions); $
             }
 
             Write-Warning "Could not retrieve stable version for $($latest.Major).$minor on attempt $attempt of ${RetryCount}: $_"
-            Start-Sleep -Seconds $attempt
+            Start-Sleep -Seconds ([Math]::Pow(2, $attempt - 1))
         }
     }
 }
